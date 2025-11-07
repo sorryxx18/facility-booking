@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>場地借用登記（內部版）</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbyZFnccwH2J0MVavaXIA4Qt79kWyCxcIKcv4ek4e7poNwLGhH8KYlIIAEL9Bo3CAGeF/exec";
+  </script>
+</head>
+<body class="bg-gradient-to-br from-emerald-50 to-indigo-50 text-gray-900 min-h-screen">
+  <div class="max-w-6xl mx-auto p-6 space-y-8">
+
+    <header class="rounded-2xl bg-gradient-to-r from-emerald-600 to-indigo-600 text-white p-6 shadow-lg">
+      <div class="flex items-center justify-between gap-4">
+        <div>
+          <h1 class="text-3xl font-bold tracking-wide mb-1">場地借用登記（內部版）</h1>
+          <p class="opacity-90 text-sm">訓練中心｜教室701～703；訓練場：空呼氣訓練場、燃燒櫃、燃燒室、大直訓練場</p>
+        </div>
+        <div class="flex gap-2">
+          <button id="exportCsvBtn" class="rounded-xl px-4 py-2 bg-white/15 hover:bg-white/25">匯出 CSV</button>
+          <button id="exportJsonBtn" class="rounded-xl px-4 py-2 bg-white/15 hover:bg-white/25">備份 JSON</button>
+          <label class="rounded-xl px-4 py-2 bg-white/15 hover:bg-white/25 cursor-pointer">復原備份
+            <input id="importJsonInput" type="file" accept="application/json" class="hidden"/>
+          </label>
+        </div>
+      </div>
+    </header>
+
+    <main class="grid md:grid-cols-2 gap-6">
+      <section class="bg-white rounded-2xl shadow p-6 space-y-4">
+        <h2 class="text-xl font-semibold text-indigo-700">新增登記</h2>
+        <form id="bookingForm" class="space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium mb-1">借用單位 *</label>
+              <input id="unit" type="text" class="w-full rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" required>
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">聯絡人 *</label>
+              <input id="contact" type="text" class="w-full rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" required>
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">聯絡電話 *</label>
+              <input id="phone" type="tel" class="w-full rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" required>
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">電子郵件</label>
+              <input id="email" type="email" class="w-full rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium mb-1">場地 *</label>
+              <select id="facility" class="w-full rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" required>
+                <optgroup label="教室">
+                  <option>教室701</option>
+                  <option>教室702</option>
+                  <option>教室703</option>
+                </optgroup>
+                <optgroup label="訓練場">
+                  <option>空呼氣訓練場</option>
+                  <option>燃燒櫃</option>
+                  <option>燃燒室</option>
+                  <option>大直訓練場</option>
+                </optgroup>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">用途</label>
+              <input id="purpose" type="text" class="w-full rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium mb-1">日期 *</label>
+              <input id="date" type="date" class="w-full rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" required>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium mb-1">開始時間 *</label>
+                <input id="startTime" type="time" class="w-full rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" required>
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-1">結束時間 *</label>
+                <input id="endTime" type="time" class="w-full rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" required>
+              </div>
+            </div>
+          </div>
+
+          <fieldset class="rounded-xl border border-gray-200 p-4 space-y-3">
+            <legend class="text-sm font-semibold text-gray-700 px-1">多日登記（可選）</legend>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label class="block text-sm mb-1">起始日期</label>
+                <input id="dateStart" type="date" class="w-full rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"/>
+              </div>
+              <div>
+                <label class="block text-sm mb-1">結束日期</label>
+                <input id="dateEnd" type="date" class="w-full rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"/>
+              </div>
+              <div class="flex items-end"><label class="inline-flex items-center gap-2 text-sm"><input id="excludeWeekend" type="checkbox" class="rounded border-gray-300"/> 排除週六日</label></div>
+            </div>
+            <div>
+              <label class="block text-sm mb-1">排除指定日期（逗號分隔 YYYY-MM-DD）</label>
+              <input id="excludeDates" type="text" placeholder="例如：2025-11-15,2025-11-18" class="w-full rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"/>
+            </div>
+          </fieldset>
+
+          <div class="flex justify-end gap-2">
+            <button type="reset" class="rounded-xl px-4 py-2 bg-gray-100 hover:bg-gray-200">清除</button>
+            <button type="submit" class="rounded-xl px-4 py-2 bg-indigo-600 text-white hover:bg-indigo-700">送出登記</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="bg-white rounded-2xl shadow p-6 space-y-4">
+        <div class="flex items-center justify-between">
+          <h2 class="text-xl font-semibold text-indigo-700">已登記清單</h2>
+          <div class="flex gap-2">
+            <input id="filterDate" type="date" class="rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"/>
+            <select id="filterFacility" class="rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
+              <option value="">全部場地</option>
+              <option>教室701</option>
+              <option>教室702</option>
+              <option>教室703</option>
+              <option>空呼氣訓練場</option>
+              <option>燃燒櫃</option>
+              <option>燃燒室</option>
+              <option>大直訓練場</option>
+            </select>
+            <button id="clearFilters" class="rounded-xl px-3 py-2 bg-gray-100 hover:bg-gray-200">清除篩選</button>
+          </div>
+        </div>
+        <div class="overflow-auto rounded-xl border border-gray-200">
+          <table class="min-w-full text-sm">
+            <thead class="bg-gray-100 text-gray-600">
+              <tr>
+                <th class="p-3 text-left">日期</th>
+                <th class="p-3 text-left">時間</th>
+                <th class="p-3 text-left">場地</th>
+                <th class="p-3 text-left">單位 / 聯絡人</th>
+                <th class="p-3 text-left">用途</th>
+                <th class="p-3 text-left">動作</th>
+              </tr>
+            </thead>
+            <tbody id="bookingTbody" class="divide-y"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <section class="bg-white rounded-2xl shadow p-6">
+      <h2 class="text-xl font-semibold mb-3 text-indigo-700">使用說明</h2>
+      <p class="text-gray-700 text-sm leading-relaxed">
+        本頁面為場地借用登記系統，登錄資料將即時記錄。<br>
+        為確保使用秩序，系統自動比對場地與時段，<strong class="text-red-600">同日重疊申請將無法送出</strong>。<br>
+        請於送出前確認日期、時段與用途是否正確。
+      </p>
+    </section>
+  </div>
+
+  <script>
+    const $ = (s)=>document.querySelector(s);
+    const STORAGE_KEY='facility_bookings_v1';
+    function todayISO(){return new Date().toISOString().slice(0,10);}
+    function timeToMinutes(t){const [h,m]=t.split(':').map(Number);return h*60+m;}
+    function overlap(a,b,c,d){return Math.max(a,c)<Math.min(b,d);}
+    function load(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY))||[]}catch{return[]}}
+    function save(d){localStorage.setItem(STORAGE_KEY,JSON.stringify(d));}
+
+    $('#date').value=todayISO();
+    const form=$('#bookingForm'),tbody=$('#bookingTbody'),filterDate=$('#filterDate'),filterFacility=$('#filterFacility');
+
+    form.addEventListener('submit',async e=>{
+      e.preventDefault();
+      const unit=$('#unit').value.trim(),contact=$('#contact').value.trim(),phone=$('#phone').value.trim(),email=$('#email').value.trim(),facility=$('#facility').value,purpose=$('#purpose').value.trim(),startTime=$('#startTime').value,endTime=$('#endTime').value;
+      const date=$('#date').value,dateStart=$('#dateStart').value,dateEnd=$('#dateEnd').value,excludeWeekend=$('#excludeWeekend').checked,excludeDates=$('#excludeDates').value.split(',').map(s=>s.trim()).filter(Boolean);
+      if(!unit||!contact||!phone||!facility||!startTime||!endTime){alert('請完整填寫必填欄位');return;}
+      if(endTime<=startTime){alert('結束時間需晚於開始時間');return;}
+      const multi=(dateStart&&dateEnd);
+      const dates=multi?listDates(dateStart,dateEnd,{excludeWeekend,excludeDates}):[date];
+      const data=load(); const s=timeToMinutes(startTime),eM=timeToMinutes(endTime);
+      const created=[],conflicts=[];
+      for(const d of dates){
+        const hasConflict=data.some(x=>x.date===d&&x.facility===facility&&overlap(s,eM,timeToMinutes(x.startTime),timeToMinutes(x.endTime)));
+        if(hasConflict){conflicts.push(d);continue;}
+        const r={id:crypto.randomUUID(),unit,contact,phone,email,facility,purpose,date:d,startTime,endTime,createdAt:new Date().toISOString()};
+        data.push(r);created.push(r);
+      }
+      data.sort((a,b)=>(a.date+a.startTime).localeCompare(b.date+b.startTime));
+      save(data);
+      let ok=0;
+      if(GAS_ENDPOINT){const jobs=created.map(x=>fetch(GAS_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(x)}));try{const rs=await Promise.allSettled(jobs);ok=rs.filter(r=>r.status==='fulfilled'&&r.value.ok).length;}catch{}}
+      form.reset();$('#date').value=todayISO();render();
+      toast(created.length?`成功登記 ${created.length} 筆${ok?`（同步 ${ok} 筆）`:''}${conflicts.length?`，略過衝突 ${conflicts.length} 天`:''}`:'全數日期皆衝突或被排除',!created.length);
+    });
+
+    function listDates(s,e,opt={}){if(!s||!e)return[];const out=[];let d=new Date(s);const end=new Date(e);const excl=new Set(opt.excludeDates||[]);while(d<=end){const iso=d.toISOString().slice(0,10);const day=d.getDay();if(excl.has(iso)||(opt.excludeWeekend&&(day===0||day===6))){d.setDate(d.getDate()+1);continue;}out.push(iso);d.setDate(d.getDate()+1);}return out;}
+    [filterDate,filterFacility].forEach(el=>el.addEventListener('change',render));
+    $('#clearFilters').addEventListener('click',()=>{filterDate.value='';filterFacility.value='';render();});
+    function render(){const data=load();const fd=filterDate.value;const ff=filterFacility.value;const rows=data.filter(x=>(!fd||x.date===fd)&&(!ff||x.facility===ff));tbody.innerHTML='';if(!rows.length){tbody.innerHTML='<tr><td colspan="6" class="p-4 text-gray-500">目前沒有資料</td></tr>';return;}for(const x of rows){const tr=document.createElement('tr');tr.className='hover:bg-gray-50';tr.innerHTML=`<td class="p-3">${x.date}</td><td class="p-3">${x.startTime}–${x.endTime}</td><td class="p-3">${badgeFor(x.facility)}</td><td class="p-3"><div>${x.unit}</div><div class="text-xs text-gray-500">${x.contact} · ${x.phone}</div></td><td class="p-3">${x.purpose||''}</td><td class="p-3"><button class="rounded bg-gray-100 px-3 py-1 mr-2" data-edit="${x.id}">編輯</button><button class="rounded bg-rose-100 text-rose-700 px-3 py-1" data-del="${x.id}">刪除</button></td>`;tbody.appendChild(tr);}tbody.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>delRecord(b.dataset.del)));tbody.querySelectorAll('[data-edit]').forEach(b=>b.addEventListener('click',()=>editRecord(b.dataset.edit)));}
+    function badgeFor(f){const map={'教室701':'bg-emerald-100 text-emerald-700','教室702':'bg-emerald-100 text-emerald-700','教室703':'bg-emerald-100 text-emerald-700','空呼氣訓練場':'bg-indigo-100 text-indigo-700','燃燒櫃':'bg-orange-100 text-orange-700','燃燒室':'bg-red-100 text-red-700','大直訓練場':'bg-sky-100 text-sky-700'};return `<span class="inline-block px-2 py-0.5 text-xs font-semibold rounded-full ${map[f]||'bg-gray-100 text-gray-700'}">${f}</span>`;}
+    function delRecord(id){if(!confirm('確定刪除？'))return;save(load().filter(x=>x.id!==id));render();}
+    function editRecord(id){const data=load();const r=data.find(x=>x.id===id);if(!r)return;$('#unit').value=r.unit;$('#contact').value=r.contact;$('#phone').value=r.phone;$('#email').value=r.email||'';$('#facility').value=r.facility;$('#purpose').value=r.purpose||'';$('#date').value=r.date;$('#startTime').value=r.startTime;$('#endTime').value=r.endTime;save(data.filter(x=>x.id!==id));render();window.scrollTo({top:0,behavior:'smooth'});}
+    function toast(msg,warn=false){let t=document.getElementById('toast');if(!t){t=document.createElement('div');t.id='toast';document.body.appendChild(t);}t.textContent=msg;t.className=`fixed bottom-6 left-1/2 -translate-x-1/2 px-4 py-2 rounded-xl shadow text-white ${warn?'bg-rose-600':'bg-emerald-600'}`;t.style.opacity='1';setTimeout(()=>t.style.opacity='0',2600);}
+    render();
+  </script>
+</body>
+</html
