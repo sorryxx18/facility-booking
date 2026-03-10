@@ -377,12 +377,13 @@
     const calendarEl = document.getElementById('calendar');
     if (calendarEl) {
         calendar = new FullCalendar.Calendar(calendarEl, {
-            initialView: 'listWeek', 
+            initialView: 'listWeek', // 預設顯示清單
             locale: 'zh-tw',
             headerToolbar: {
                 left: 'prev,next today',
                 center: 'title',
-                right: 'listWeek,timeGridWeek,dayGridMonth' 
+                // ★ 把 timeGridWeek 改為 dayGridWeek (橫向排版的週視圖)
+                right: 'listWeek,dayGridWeek,dayGridMonth' 
             },
             buttonText: {
                 today: '今天',
@@ -393,22 +394,34 @@
             eventTimeFormat: {
                 hour: '2-digit',
                 minute: '2-digit',
-                hour12: false // 使用 24 小時制
+                hour12: false 
             },
             
-            // ★ 策略一：限制月視圖每天顯示的數量 (超過2筆就收合)
+            // ★ 策略一：限制格子(包含月與週)每天最多顯示 2 筆，超過會變 +X 更多
             dayMaxEvents: 2, 
-            
-            // ★ 策略二：裁切週視圖的半夜無效時間 (只顯示 08:00 - 18:00)
-            slotMinTime: '08:00:00',
-            slotMaxTime: '18:00:00',
-            
-            // ★ 策略三：滑鼠懸停顯示 Tooltip
-            eventDidMount: function(info) {
-                // 利用原生的 HTML title 屬性來實現簡單的 Tooltip
-                if (info.event.extendedProps.description) {
-                    info.el.title = info.event.extendedProps.description;
+
+            // ★ 自訂渲染邏輯 (策略二：清單詳細 / 格子極簡)
+            eventContent: function(arg) {
+                // 如果目前是「清單」模式，顯示：單位 - 場地名稱
+                if (arg.view.type === 'listWeek') {
+                    return { html: `<div class="font-bold text-slate-700">${arg.event.extendedProps.unit} <span class="font-normal text-slate-500 ml-1">- ${arg.event.title}</span></div>` };
+                } 
+                // 如果是「月」或「週(格子)」模式，極簡化只顯示場地名稱
+                else {
+                    return { html: `<div class="text-[11px] text-white px-1 font-bold truncate rounded">${arg.event.title}</div>` };
                 }
+            },
+
+            // ★ 策略三：滑鼠停留在行程上時，浮現完整資訊 Tooltip
+            eventDidMount: function(info) {
+                if (info.event.extendedProps.description) {
+                    info.el.title = info.event.extendedProps.description; 
+                }
+            },
+
+            // ★ 點擊行程時，跳出對話框顯示完整資訊 (時間點進去了解)
+            eventClick: function(info) {
+                alert(info.event.extendedProps.description);
             },
             events:[]
         });
@@ -547,13 +560,17 @@
   function updateFullCalendar() {
       if (!calendar) return;
       const events = dbData.filter(x => x.status.includes('已核准')).map(x => ({
-          title: `${x.unit} - ${x.facility}`, 
+          title: x.facility, // 日曆格子上只顯示「場地名稱」
           start: `${x.date}T${x.startTime}:00`, 
           end: `${x.date}T${x.endTime}:00`,
           backgroundColor: x.facility.includes('教室') ? '#6366f1' : '#10b981', 
           borderColor: 'transparent',
-          // ★ 加入詳細資訊給 Tooltip 讀取
-          description: `借用單位：${x.unit}\n聯絡人：${x.contact}\n場地：${x.facility}\n時間：${x.startTime} - ${x.endTime}`
+          // 將詳細資料存入 extendedProps，讓 Tooltip 或是點擊時可以讀取
+          extendedProps: {
+              unit: x.unit,
+              contact: x.contact,
+              description: `【借用明細】\n借用單位：${x.unit}\n聯絡人員：${x.contact}\n借用場地：${x.facility}\n借用時間：${x.startTime} - ${x.endTime}`
+          }
       }));
       calendar.removeAllEvents();
       calendar.addEventSource(events);
