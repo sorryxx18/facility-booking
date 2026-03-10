@@ -38,7 +38,7 @@
     .weekend { background-color: #f8fafc; color: #64748b; }
 
     /* ★ 覆寫 FullCalendar 的樣式讓它配 Tailwind */
-    .fc-event { cursor: pointer; border: none !important; padding: 1px 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+    .fc-event { cursor: pointer; border: none !important; padding: 2px 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
     .fc-theme-standard th { border-color: #e2e8f0; padding: 6px 0; font-weight: 600; font-size: 13px; color: #475569; }
     .fc-theme-standard td, .fc-theme-standard th { border-color: #f1f5f9; }
     .fc .fc-toolbar-title { font-size: 1.1rem !important; font-weight: bold; color: #4f46e5; }
@@ -46,6 +46,8 @@
     .fc .fc-button-primary:hover, .fc .fc-button-primary:active, .fc .fc-button-active { background-color: #4f46e5 !important; color: white !important; border-color: #4f46e5 !important; }
     .fc-list-event:hover td { background-color: #f8fafc !important; }
     .fc-event-time, .fc-event-title { font-size: 0.75rem; }
+    /* ★ 讓 "+X 更多" 按鈕看起來更明顯 */
+    .fc-daygrid-more-link { font-weight: bold; color: #3b82f6 !important; font-size: 0.75rem; padding-left: 4px; }
   </style>
 
   <script>
@@ -375,13 +377,11 @@
     const calendarEl = document.getElementById('calendar');
     if (calendarEl) {
         calendar = new FullCalendar.Calendar(calendarEl, {
-            // ★ 改為預設顯示「清單(週)」
             initialView: 'listWeek', 
             locale: 'zh-tw',
             headerToolbar: {
                 left: 'prev,next today',
                 center: 'title',
-                // ★ 把 listWeek 放最前面，讓順序變成「清單、週、月」
                 right: 'listWeek,timeGridWeek,dayGridMonth' 
             },
             buttonText: {
@@ -394,6 +394,21 @@
                 hour: '2-digit',
                 minute: '2-digit',
                 hour12: false // 使用 24 小時制
+            },
+            
+            // ★ 策略一：限制月視圖每天顯示的數量 (超過2筆就收合)
+            dayMaxEvents: 2, 
+            
+            // ★ 策略二：裁切週視圖的半夜無效時間 (只顯示 08:00 - 18:00)
+            slotMinTime: '08:00:00',
+            slotMaxTime: '18:00:00',
+            
+            // ★ 策略三：滑鼠懸停顯示 Tooltip
+            eventDidMount: function(info) {
+                // 利用原生的 HTML title 屬性來實現簡單的 Tooltip
+                if (info.event.extendedProps.description) {
+                    info.el.title = info.event.extendedProps.description;
+                }
             },
             events:[]
         });
@@ -536,7 +551,9 @@
           start: `${x.date}T${x.startTime}:00`, 
           end: `${x.date}T${x.endTime}:00`,
           backgroundColor: x.facility.includes('教室') ? '#6366f1' : '#10b981', 
-          borderColor: 'transparent'
+          borderColor: 'transparent',
+          // ★ 加入詳細資訊給 Tooltip 讀取
+          description: `借用單位：${x.unit}\n聯絡人：${x.contact}\n場地：${x.facility}\n時間：${x.startTime} - ${x.endTime}`
       }));
       calendar.removeAllEvents();
       calendar.addEventSource(events);
@@ -639,7 +656,7 @@
         } else {
           const applyMode = document.querySelector('input[name="applyMode"]:checked').value;
           let dates =[];
-          if (applyMode === 'single') { if (!$('#date').value) throw new Error('請填寫單日日期'); dates = [$('#date').value]; } 
+          if (applyMode === 'single') { if (!$('#date').value) throw new Error('請填寫單日日期'); dates =[$('#date').value]; } 
           else { if (finalSelectedDates.length === 0) { alert('請至少選擇一個日期'); throw new Error('未選擇日期'); } dates = [...finalSelectedDates]; }
           await fetch(GAS_ENDPOINT, { method: 'POST', headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ ...base, dates: dates, action: 'create_batch' }) });
           showToast('申請成功', `已送出 ${dates.length} 筆紀錄，待審核。`, 'success'); resetForm(); setTimeout(fetchData, 1500);
