@@ -375,13 +375,14 @@
     const calendarEl = document.getElementById('calendar');
     if (calendarEl) {
         calendar = new FullCalendar.Calendar(calendarEl, {
-            initialView: 'dayGridMonth',
+            // ★ 改為預設顯示「清單(週)」
+            initialView: 'listWeek', 
             locale: 'zh-tw',
             headerToolbar: {
                 left: 'prev,next today',
                 center: 'title',
-                // ★ 這裡加回了 月, 週, 清單 的切換按鈕
-                right: 'dayGridMonth,timeGridWeek,listWeek' 
+                // ★ 把 listWeek 放最前面，讓順序變成「清單、週、月」
+                right: 'listWeek,timeGridWeek,dayGridMonth' 
             },
             buttonText: {
                 today: '今天',
@@ -531,9 +532,7 @@
   function updateFullCalendar() {
       if (!calendar) return;
       const events = dbData.filter(x => x.status.includes('已核准')).map(x => ({
-          // ★ 標題加上借用單位，在清單視圖會更清楚
           title: `${x.unit} - ${x.facility}`, 
-          // ★ 結合日期與時間 (YYYY-MM-DDTHH:MM:SS) 這樣在「週」視圖才會準確落在該時間格
           start: `${x.date}T${x.startTime}:00`, 
           end: `${x.date}T${x.endTime}:00`,
           backgroundColor: x.facility.includes('教室') ? '#6366f1' : '#10b981', 
