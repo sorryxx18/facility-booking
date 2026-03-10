@@ -6,7 +6,7 @@
   <title>場地借用管理系統</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
-  <!-- ★ 新增 FullCalendar 套件 -->
+  <!-- ★ 引入 FullCalendar 套件 -->
   <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
   
   <style>
@@ -37,13 +37,15 @@
     .holiday-red.active { background: #dc2626; color: white; border-color: #b91c1c; }
     .weekend { background-color: #f8fafc; color: #64748b; }
 
-    /* ★ 覆寫 FullCalendar 的小細節讓它更配 Tailwind */
-    .fc-event { cursor: pointer; border: none !important; }
-    .fc-theme-standard th { border-color: #e2e8f0; padding: 4px 0; font-weight: normal; font-size: 12px; color: #64748b; }
+    /* ★ 覆寫 FullCalendar 的樣式讓它配 Tailwind */
+    .fc-event { cursor: pointer; border: none !important; padding: 1px 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+    .fc-theme-standard th { border-color: #e2e8f0; padding: 6px 0; font-weight: 600; font-size: 13px; color: #475569; }
     .fc-theme-standard td, .fc-theme-standard th { border-color: #f1f5f9; }
-    .fc .fc-toolbar-title { font-size: 1rem !important; font-weight: bold; color: #4f46e5; }
-    .fc .fc-button-primary { background-color: #f1f5f9 !important; border: none !important; color: #475569 !important; padding: 0.2rem 0.5rem !important; }
-    .fc .fc-button-primary:hover { background-color: #e2e8f0 !important; }
+    .fc .fc-toolbar-title { font-size: 1.1rem !important; font-weight: bold; color: #4f46e5; }
+    .fc .fc-button-primary { background-color: #f1f5f9 !important; border: 1px solid #e2e8f0 !important; color: #475569 !important; padding: 0.3rem 0.6rem !important; font-size: 13px !important; text-transform: capitalize; }
+    .fc .fc-button-primary:hover, .fc .fc-button-primary:active, .fc .fc-button-active { background-color: #4f46e5 !important; color: white !important; border-color: #4f46e5 !important; }
+    .fc-list-event:hover td { background-color: #f8fafc !important; }
+    .fc-event-time, .fc-event-title { font-size: 0.75rem; }
   </style>
 
   <script>
@@ -247,11 +249,11 @@
             <div id="weeklyNotice" class="space-y-3 max-h-[200px] overflow-y-auto pr-1"></div>
           </div>
           
-          <!-- ★ 這裡原本是 iframe，現在換成 FullCalendar 容器 -->
-          <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-3 h-[450px]">
-            <div id="calendar" class="h-full"></div>
+          <!-- ★ FullCalendar 容器 -->
+          <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-3 h-[500px] flex flex-col">
+            <div id="calendar" class="h-full w-full"></div>
           </div>
-
+          
         </div>
       </div>
 
@@ -376,16 +378,23 @@
             initialView: 'dayGridMonth',
             locale: 'zh-tw',
             headerToolbar: {
-                left: 'prev,next',
+                left: 'prev,next today',
                 center: 'title',
-                right: '' // 不需要月週天切換按鈕保持精簡
+                // ★ 這裡加回了 月, 週, 清單 的切換按鈕
+                right: 'dayGridMonth,timeGridWeek,listWeek' 
             },
-            events:[], // 資料載入前是空的
-            displayEventTime: false,
-            eventContent: function(arg) {
-                // 自訂日曆條的外觀
-                return { html: `<div class="text-[10px] text-white px-1 font-bold truncate rounded">${arg.event.title}</div>` };
-            }
+            buttonText: {
+                today: '今天',
+                month: '月',
+                week: '週',
+                list: '清單'
+            },
+            eventTimeFormat: {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false // 使用 24 小時制
+            },
+            events:[]
         });
         calendar.render();
     }
@@ -518,14 +527,15 @@
   }
   function addDateToList() { openDateModal(); }
 
-  // ★ 新增的日曆更新函數
+  // ★ 更新 FullCalendar 內容
   function updateFullCalendar() {
       if (!calendar) return;
-      // 只挑選已核准的事件顯示在日曆上
       const events = dbData.filter(x => x.status.includes('已核准')).map(x => ({
-          title: x.facility,
-          start: x.date, // YYYY-MM-DD
-          // 根據場地給予不同顏色
+          // ★ 標題加上借用單位，在清單視圖會更清楚
+          title: `${x.unit} - ${x.facility}`, 
+          // ★ 結合日期與時間 (YYYY-MM-DDTHH:MM:SS) 這樣在「週」視圖才會準確落在該時間格
+          start: `${x.date}T${x.startTime}:00`, 
+          end: `${x.date}T${x.endTime}:00`,
           backgroundColor: x.facility.includes('教室') ? '#6366f1' : '#10b981', 
           borderColor: 'transparent'
       }));
@@ -541,7 +551,7 @@
       updateWeeklyNotice();
       renderList();
       renderTodo();
-      updateFullCalendar(); // ★ 取到資料後更新日曆
+      updateFullCalendar(); // ★ 取得資料後更新日曆
       showToast('同步完成', '資料已更新', 'success');
     } catch (e) { console.error(e); showToast('同步失敗', '無法取得最新資料', 'error'); }
   }
